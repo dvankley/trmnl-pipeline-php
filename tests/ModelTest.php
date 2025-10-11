@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bnussbau\TrmnlPipeline\Data\ColorType;
 use Bnussbau\TrmnlPipeline\Data\ModelData;
 use Bnussbau\TrmnlPipeline\Exceptions\ProcessingException;
 use Bnussbau\TrmnlPipeline\Model;
@@ -35,7 +36,27 @@ describe('Model', function (): void {
             ->and($model->getMimeType())->toBe('image/png')
             ->and($model->getOffsetX())->toBe(0)
             ->and($model->getOffsetY())->toBe(0)
-            ->and($model->getKind())->toBe('trmnl');
+            ->and($model->getKind())->toBe('trmnl')
+            ->and($model->getColorType())->toBe(ColorType::GRAYSCALE)
+            ->and($model->getPalette())->toBeNull();
+    });
+
+    it('can get a model with a palette', function (): void {
+        $model = Model::GOOD_DISPLAY_SPECTRA6_7_3;
+
+        expect($model->getLabel())->toBe('Good Display Spectra6 7.3"')
+            ->and($model->getWidth())->toBe(800)
+            ->and($model->getHeight())->toBe(480)
+            ->and($model->getColors())->toBe(6)
+            ->and($model->getBitDepth())->toBe(3)
+            ->and($model->getScaleFactor())->toBe(1.0)
+            ->and($model->getRotation())->toBe(0)
+            ->and($model->getMimeType())->toBe('image/png')
+            ->and($model->getOffsetX())->toBe(0)
+            ->and($model->getOffsetY())->toBe(0)
+            ->and($model->getKind())->toBe('byod')
+            ->and($model->getColorType())->toBe(ColorType::INDEXED)
+            ->and($model->getPalette())->toMatchArray(Model::SPECTRA_6_PALETTE);
     });
 
     it('can get TRMNL models', function (): void {
@@ -60,7 +81,7 @@ describe('Model', function (): void {
     });
 
     it('throws exception for invalid model name', function (): void {
-        expect(fn (): \Bnussbau\TrmnlPipeline\Data\ModelData => ModelData::getByName('invalid_model'))
+        expect(fn(): \Bnussbau\TrmnlPipeline\Data\ModelData => ModelData::getByName('invalid_model'))
             ->toThrow(ProcessingException::class, "Model 'invalid_model' not found in models data");
     });
 });

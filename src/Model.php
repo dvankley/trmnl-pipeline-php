@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bnussbau\TrmnlPipeline;
 
+use Bnussbau\TrmnlPipeline\Data\ColorType;
 use Bnussbau\TrmnlPipeline\Data\ModelData;
 use Bnussbau\TrmnlPipeline\Exceptions\ProcessingException;
 
@@ -24,6 +25,23 @@ enum Model: string
     case KOBO_AURA_ONE = 'kobo_aura_one';
     case KOBO_AURA_HD = 'kobo_aura_hd';
     case INKY_IMPRESSION_13_3 = 'inky_impression_13_3';
+    case GOOD_DISPLAY_SPECTRA6_7_3 = 'good_display_spectra6_7_3';
+
+    const SPECTRA_6_PALETTE =
+        [
+            // Black
+            0x000000,
+            // White
+            0xFFFFFF,
+            // Yellow
+            0xFFFF00,
+            // Red
+            0xFF0000,
+            // Green
+            0x00FF00,
+            // Blue
+            0x0000FF,
+        ];
 
     /**
      * Get the model data from JSON
@@ -98,10 +116,25 @@ enum Model: string
         return $this->getData()->kind;
     }
 
+    public function getColorType(): ColorType
+    {
+        return $this->getData()->colorType;
+    }
+
+    /**
+     * @return ?array<int> $palette An array of RGB codes for the model's palette.
+     *  Each entry should be defined in a typical RGB hex code format.
+     *  Specifically, a 48-bit number where the MSB is red, the middle byte is green, and the LSB is blue.
+     */
+    public function getPalette(): ?array
+    {
+        return $this->getData()->palette;
+    }
+
     /**
      * Get all models of a specific kind
      *
-     * @param  string  $kind  The kind to filter by (trmnl, kindle, byod)
+     * @param string $kind The kind to filter by (trmnl, kindle, byod)
      * @return array<Model>
      *
      * @throws ProcessingException
@@ -113,7 +146,7 @@ enum Model: string
 
         return array_values(array_filter(
             self::cases(),
-            fn (Model $model): bool => in_array($model->value, $modelNames, true)
+            fn(Model $model): bool => in_array($model->value, $modelNames, true)
         ));
     }
 

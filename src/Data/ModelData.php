@@ -17,7 +17,22 @@ readonly class ModelData
         public string $description,
         public int $width,
         public int $height,
+        /**
+         * @var int $colors The number of colors the model supports.
+         * This value may be less than 2^$bitDepth in cases where the model's supported number of
+         *  colors is not a power of 2.
+         *
+         * The actual set of colors is determined by this property in combination with the {@see self::$colorType} property.
+         * For {@see ColorType::RGB} or {@see ColorType::GRAYSCALE}, the colors specified by this property's count are
+         *  evenly distributed across the color space.
+         * For {@see ColorType::INDEXED}, the colors are explicitly specified in the {@see self::$palette} property, and this
+         *  property's value should match the size of the $palette array.
+         *
+         */
         public int $colors,
+        /**
+         * @var int $bitDepth The number of bits per pixel.
+         */
         public int $bitDepth,
         public float $scaleFactor,
         public int $rotation,
@@ -26,6 +41,15 @@ readonly class ModelData
         public int $offsetY,
         public string $publishedAt,
         public string $kind,
+        public ColorType $colorType,
+        /**
+         * @var ?array<int> $palette An array of RGB codes for the model's palette.
+         * This property is required for models with ColorType::INDEXED.
+         *
+         * Each entry should be defined in the typical RGB hex code format.
+         * Specifically, a 48-bit number where the MSB is red, the middle byte is green, and the LSB is blue.
+         */
+        public ?array $palette = null,
     ) {}
 
     /**
@@ -82,6 +106,8 @@ readonly class ModelData
                 offsetY: (int) ($modelData['offset_y'] ?? 0),
                 publishedAt: $modelData['published_at'] ?? '',
                 kind: $modelData['kind'] ?? '',
+                colorType: ColorType::fromString($modelData['color_type']),
+                palette: isset($modelData['palette']) && is_array($modelData['palette']) ? $modelData['palette'] : null,
             );
         }
 

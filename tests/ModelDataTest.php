@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Bnussbau\TrmnlPipeline\Data\ColorType;
 use Bnussbau\TrmnlPipeline\Data\ModelData;
 use Bnussbau\TrmnlPipeline\Exceptions\ProcessingException;
+use Bnussbau\TrmnlPipeline\Model;
 
 describe('ModelData', function (): void {
     it('can load models from JSON', function (): void {
@@ -75,6 +77,15 @@ describe('ModelData', function (): void {
         expect($model->offsetX)->toBe(0);
         expect($model->offsetY)->toBe(0);
         expect($model->kind)->toBe('trmnl');
+        expect($model->colorType)->toBe(ColorType::GRAYSCALE);
+        expect($model->palette)->toBeNull();
+    });
+
+    it('has palette for Spectra6 indexed model', function (): void {
+        $model = ModelData::getByName('good_display_spectra6_7_3');
+        expect($model->colorType)->toBe(ColorType::INDEXED);
+        expect($model->palette)->toBeArray();
+        expect($model->palette)->toMatchArray(Model::SPECTRA_6_PALETTE);
     });
 
     it('has correct properties for Amazon Kindle 2024 model', function (): void {
