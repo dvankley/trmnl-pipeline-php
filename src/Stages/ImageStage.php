@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Bnussbau\TrmnlPipeline\Stages;
 
+use Bnussbau\TrmnlPipeline\Data\RgbColor;
+use Bnussbau\TrmnlPipeline\Dithering\DiffusionMap;
+use Bnussbau\TrmnlPipeline\Dithering\ErrorDiffusion;
 use Bnussbau\TrmnlPipeline\Exceptions\ProcessingException;
 use Bnussbau\TrmnlPipeline\Model;
 use Bnussbau\TrmnlPipeline\StageInterface;
 use Bnussbau\TrmnlPipeline\TrmnlPipeline;
+use Bnussbau\TrmnlPipeline\Data\ColorType;
 use Imagick;
 use ImagickException;
 use ImagickPixel;
@@ -53,6 +57,13 @@ class ImageStage implements StageInterface
     private ?int $offsetY = null;
 
     private ?string $outputPath = null;
+
+    private ?ColorType $colorType = null;
+
+    /**
+     * @var array<RgbColor> $palette If {@see $colorType} is {@see ColorType::INDEXED}, this is the supported palette.
+     */
+    private ?array $palette = null;
 
     /**
      * Set output format
@@ -108,6 +119,26 @@ class ImageStage implements StageInterface
     public function bitDepth(int $depth): self
     {
         $this->bitDepth = $depth;
+
+        return $this;
+    }
+
+    /**
+     * Set color type
+     */
+    public function colorType(ColorType $colorType): self
+    {
+        $this->colorType = $colorType;
+
+        return $this;
+    }
+
+    /**
+     * @param array<RgbColor> $palette If {@see $colorType} is {@see ColorType::INDEXED}, set the supported palette.
+     */
+    public function palette(array $palette): self
+    {
+        $this->palette = $palette;
 
         return $this;
     }
@@ -182,6 +213,12 @@ class ImageStage implements StageInterface
         }
         if ($this->format === null) {
             $this->format = $this->getFormatFromMimeType($data->mimeType);
+        }
+        if ($this->colorType === null) {
+            $this->colorType = $data->colorType;
+        }
+        if ($this->palette === null && $data->palette !== null) {
+            $this->palette = $data->palette;
         }
 
         return $this;
@@ -261,8 +298,12 @@ class ImageStage implements StageInterface
         // Quantize colors if specified
         $this->quantize($imagick);
 
-        // Set bit depth if specified (after quantization)
-        $imagick->setImageDepth($this->bitDepth ?? self::DEFAULT_BIT_DEPTH);
+        // Do not re-set bit depth for indexed images because it was already set in the quantization step
+        //  and it will cause the image to be remapped incorrectly.
+        if ($this->colorType !== ColorType::INDEXED) {
+            // Set bit depth if specified (after quantization)
+            $imagick->setImageDepth($this->bitDepth ?? self::DEFAULT_BIT_DEPTH);
+        }
 
         // Set output format if specified
         $format = $this->format ?? self::DEFAULT_FORMAT;
@@ -407,7 +448,12 @@ class ImageStage implements StageInterface
      */
     public function transformColorSpace(Imagick $imagick): void
     {
-        $imagick->transformImageColorspace(Imagick::COLORSPACE_GRAY);
+        $colorType = $this->colorType ?? ColorType::GRAYSCALE;
+        $targetSpace = match ($colorType) {
+            ColorType::GRAYSCALE => Imagick::COLORSPACE_GRAY,
+            ColorType::RGB, ColorType::INDEXED => Imagick::COLORSPACE_SRGB,
+        };
+        $imagick->transformImageColorspace($targetSpace);
     }
 
     /**
@@ -422,19 +468,72 @@ class ImageStage implements StageInterface
         return $outputPath;
     }
 
+
     /**
-     * @throws ImagickException
+     * Reduces the colors in the image to match the capabilities configured in this instance
+     *  of {@see ImageStage}, which are typically derived from the device the image will be displayed on.
+     *
+     * If this instance's colorType has been set to grayscale or RGB, the image will be quantized to the
+     *  target number of colors.
+     * If this instance's colorType has been set to indexed, the image will be remapped to the palette,
+     *  using error diffusion dithering to improve the display quality.
      */
     public function quantize(Imagick $imagick): void
     {
+        $colorType = $this->colorType ?? ColorType::GRAYSCALE;
+        $colors = $this->colors ?? self::DEFAULT_COLORS;
+
+        if ($colorType === ColorType::RGB) {
+            // If the target color type is RGB, there's no loss of fidelity so no need to quantize.
+            return;
+        }
+
         $imagick->setOption('dither', 'FloydSteinberg');
-        $imagick->quantizeImage(
-            $this->colors ?? self::DEFAULT_COLORS,
-            Imagick::COLORSPACE_GRAY,
-            0,
-            true,
-            false
-        );
+
+        if ($colorType === ColorType::GRAYSCALE) {
+            $imagick->quantizeImage(
+                $colors,
+                Imagick::COLORSPACE_GRAY,
+                0,
+                true,
+                false
+            );
+        } elseif ($colorType === ColorType::INDEXED) {
+            if ($this->palette === null) {
+                throw new ProcessingException('Palette is required when color_type is indexed');
+            }
+            $paletteCount = count($this->palette);
+            if ($paletteCount === 0) {
+                throw new ProcessingException('Palette must not be empty when color_type is indexed');
+            }
+            if ($colors !== $paletteCount) {
+                throw new ProcessingException("ImageStage color count $colors does not match palette size $paletteCount");
+            }
+
+            $imagick->setImageType(Imagick::IMGTYPE_PALETTE);
+
+            // TODO: consider using LAB colorspace for color difference calculations.
+            $imagick->writeImage(sys_get_temp_dir() . '/test_pre_dither.png');
+
+            $paletteImage = new Imagick;
+            // Create a 1-row image with each pixel representing a palette color
+            $paletteImage->newImage(max(1, $paletteCount), 1, new ImagickPixel('white'));
+            $paletteImage->setImageFormat('PNG8'); // or GIF
+
+            foreach (array_values($this->palette) as $x => $rgb) {
+                // $rgb is an array ['r'=>..,'g'=>..,'b'=>..]
+                $paletteImage->setImagePixelColor($x, 0, new ImagickPixel($rgb->toImagickString()));
+            }
+
+            $paletteImage->setImageType(Imagick::IMGTYPE_PALETTE);
+            $paletteImage->quantizeImage($paletteCount, Imagick::COLORSPACE_SRGB, 0, false, false);
+
+            // Remap image to the palette
+            $imagick->remapImage($paletteImage, Imagick::DITHERMETHOD_FLOYDSTEINBERG);
+
+            $imagick->writeImage(sys_get_temp_dir() . '/test_post_quantize.png');
+            $paletteImage->clear();
+        }
     }
 
     /**

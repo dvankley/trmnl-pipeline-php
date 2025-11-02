@@ -6,6 +6,7 @@ namespace Bnussbau\TrmnlPipeline;
 
 use Bnussbau\TrmnlPipeline\Data\ColorType;
 use Bnussbau\TrmnlPipeline\Data\ModelData;
+use Bnussbau\TrmnlPipeline\Data\RgbColor;
 use Bnussbau\TrmnlPipeline\Exceptions\ProcessingException;
 
 enum Model: string
@@ -27,21 +28,23 @@ enum Model: string
     case INKY_IMPRESSION_13_3 = 'inky_impression_13_3';
     case GOOD_DISPLAY_SPECTRA6_7_3 = 'good_display_spectra6_7_3';
 
-    const SPECTRA_6_PALETTE =
-        [
+    public static function getSpectraSixPalette(): array
+    {
+        return [
             // Black
-            0x000000,
+            RgbColor::fromComponents(0, 0, 0),
             // White
-            0xFFFFFF,
+            RgbColor::fromComponents(255, 255, 255),
             // Yellow
-            0xFFFF00,
+            RgbColor::fromComponents(255, 255, 0),
             // Red
-            0xFF0000,
+            RgbColor::fromComponents(255, 0, 0),
             // Green
-            0x00FF00,
+            RgbColor::fromComponents(0, 255, 0),
             // Blue
-            0x0000FF,
+            RgbColor::fromComponents(0, 0, 255),
         ];
+    }
 
     /**
      * Get the model data from JSON
@@ -122,9 +125,7 @@ enum Model: string
     }
 
     /**
-     * @return ?array<int> $palette An array of RGB codes for the model's palette.
-     *  Each entry should be defined in a typical RGB hex code format.
-     *  Specifically, a 48-bit number where the MSB is red, the middle byte is green, and the LSB is blue.
+     * @return ?array<RgbColor> $palette If {@see $colorType} is {@see ColorType::INDEXED}, returns the supported palette.
      */
     public function getPalette(): ?array
     {

@@ -43,11 +43,8 @@ readonly class ModelData
         public string $kind,
         public ColorType $colorType,
         /**
-         * @var ?array<int> $palette An array of RGB codes for the model's palette.
+         * @var ?array<RgbColor> $palette An array of RGB colors that define the model's palette.
          * This property is required for models with ColorType::INDEXED.
-         *
-         * Each entry should be defined in the typical RGB hex code format.
-         * Specifically, a 48-bit number where the MSB is red, the middle byte is green, and the LSB is blue.
          */
         public ?array $palette = null,
     ) {}
@@ -91,6 +88,12 @@ readonly class ModelData
                 throw new ProcessingException("Model data missing required 'name' field");
             }
 
+            $palette = null;
+
+            if (isset($modelData['palette']) && is_array($modelData['palette'])) {
+                $palette = array_map(fn($json) => RgbColor::fromArray($json), $modelData['palette']);
+            }
+
             $models[$modelData['name']] = new self(
                 name: $modelData['name'],
                 label: $modelData['label'] ?? '',
@@ -107,7 +110,7 @@ readonly class ModelData
                 publishedAt: $modelData['published_at'] ?? '',
                 kind: $modelData['kind'] ?? '',
                 colorType: ColorType::fromString($modelData['color_type']),
-                palette: isset($modelData['palette']) && is_array($modelData['palette']) ? $modelData['palette'] : null,
+                palette: $palette,
             );
         }
 

@@ -239,29 +239,29 @@
             "color_type": "grayscale"
         },
 		{
-		  "name": "good_display_spectra6_7_3",
-		  "label": "Good Display Spectra6 7.3\"",
-		  "description": "Dalian Good Display Spectra6 6 color 7.3\"",
-		  "width": 800,
-		  "height": 480,
-		  "colors": 6,
-		  "bit_depth": 3,
-		  "scale_factor": 1.0,
-		  "rotation": 0,
-		  "mime_type": "image/png",
-		  "offset_x": 0,
-		  "offset_y": 0,
-		  "published_at": "2025-10-11T00:00:00.000Z",
-		  "kind": "byod",
-		  "color_type": "indexed",
-		  "palette": [
-		    0,
-			16777215,
-			16776960,
-			16711680,
-			65280,
-		    255
-		  ]
+            "name": "good_display_spectra6_7_3",
+            "label": "Good Display Spectra6 7.3\"",
+            "description": "Dalian Good Display Spectra6 6 color 7.3\"",
+            "width": 800,
+            "height": 480,
+            "colors": 6,
+            "bit_depth": 3,
+            "scale_factor": 1.0,
+            "rotation": 0,
+            "mime_type": "image/png",
+            "offset_x": 0,
+            "offset_y": 0,
+            "published_at": "2025-10-11T00:00:00.000Z",
+            "kind": "byod",
+            "color_type": "indexed",
+            "palette": [
+                {"r":0, "g":0, "b":0},
+                {"r":255, "g":255, "b":255},
+                {"r":255, "g":255, "b":0},
+                {"r":255, "g":0, "b":0},
+                {"r":0, "g":255, "b":0},
+                {"r":0, "g":0, "b":255}
+            ]
 		}
     ]
 }

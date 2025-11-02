@@ -85,7 +85,7 @@ describe('ModelData', function (): void {
         $model = ModelData::getByName('good_display_spectra6_7_3');
         expect($model->colorType)->toBe(ColorType::INDEXED);
         expect($model->palette)->toBeArray();
-        expect($model->palette)->toMatchArray(Model::SPECTRA_6_PALETTE);
+        expect($model->palette)->toMatchArray(Model::getSpectraSixPalette());
     });
 
     it('has correct properties for Amazon Kindle 2024 model', function (): void {

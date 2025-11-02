@@ -56,7 +56,7 @@ describe('Model', function (): void {
             ->and($model->getOffsetY())->toBe(0)
             ->and($model->getKind())->toBe('byod')
             ->and($model->getColorType())->toBe(ColorType::INDEXED)
-            ->and($model->getPalette())->toMatchArray(Model::SPECTRA_6_PALETTE);
+            ->and($model->getPalette())->toMatchArray(Model::getSpectraSixPalette());
     });
 
     it('can get TRMNL models', function (): void {
