@@ -512,9 +512,6 @@ class ImageStage implements StageInterface
 
             $imagick->setImageType(Imagick::IMGTYPE_PALETTE);
 
-            // TODO: consider using LAB colorspace for color difference calculations.
-            $imagick->writeImage(sys_get_temp_dir() . '/test_pre_dither.png');
-
             $paletteImage = new Imagick;
             // Create a 1-row image with each pixel representing a palette color
             $paletteImage->newImage(max(1, $paletteCount), 1, new ImagickPixel('white'));
@@ -526,12 +523,12 @@ class ImageStage implements StageInterface
             }
 
             $paletteImage->setImageType(Imagick::IMGTYPE_PALETTE);
+            // TODO: consider using LAB colorspace for color difference calculations.
             $paletteImage->quantizeImage($paletteCount, Imagick::COLORSPACE_SRGB, 0, false, false);
 
             // Remap image to the palette
             $imagick->remapImage($paletteImage, Imagick::DITHERMETHOD_FLOYDSTEINBERG);
 
-            $imagick->writeImage(sys_get_temp_dir() . '/test_post_quantize.png');
             $paletteImage->clear();
         }
     }

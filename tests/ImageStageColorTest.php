@@ -153,6 +153,7 @@ describe('ImageStage Color Support', function (): void {
 
         expect(file_exists($this->resultPath))->toBeTrue();
         $resultImage = new Imagick($this->resultPath);
+        expect($resultImage->getImageType())->toBe(Imagick::IMGTYPE_PALETTE);
 
         // Left bar (exact red) should map to palette red
         $leftSampleColor = $resultImage->getImagePixelColor(X_LEFT, Y_SAMPLE)->getColor();
